@@ -157,3 +157,34 @@ resource "aws_subnet" "private_subnet" {
     Name    = "private_subnet"
   }
 }
+
+
+###3. We are proceeding with autoscaling so the it would be taking care of instance even if we don't take care of it ##
+### here we are using the asme ami id so that it doesn't creare any issue
+
+resource "aws_launch_configuration" "instance" {
+  name_prefix   = "instance-lc"
+  image_id      = var.ami_id
+  instance_type = "t2.small"
+  user_data                   = <<EOF
+#!/bin/sh
+service nginx start
+EOF
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_autoscaling_group" "instance" {
+  name                 = "asg"
+  launch_configuration = aws_launch_configuration.conf.id
+  min_size             = 1
+  max_size             = 1
+  availability_zones   = ["eu-west-1a", "eu-west-1b", "eu-west-1c"] # availability zone might be changing based on regions
+  desired_capacity     = 1
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
